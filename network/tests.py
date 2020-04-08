@@ -3,7 +3,7 @@ from rest_framework.test import APITestCase, APIClient
 from rest_framework.views import status
 from .models import Subnets
 from .serializers import SubnetsSerializer
-
+import json
 # tests for views
 
 
@@ -15,11 +15,36 @@ class BaseViewTest(APITestCase):
         if name != "" and network_address != "":
             Subnets.objects.create(name=name, network_address=network_address)
 
+    def make_a_request(self, kind="post", **kwargs):
+        """
+        Make a post request to create a subnet
+        :param kind: HTTP VERB
+        :return:
+        """
+        if kind == "post":
+            return self.client.post(
+                reverse(
+                    "subnets-list-create",
+                ),
+                data=json.dumps(kwargs["data"]),
+                content_type='application/json'
+            )
+
     def setUp(self):
         # add test data
         self.create_subnet("Class A", "192.0.0.0/8")
         self.create_subnet("Class B", "192.168.0.0/16")
         self.create_subnet("Class C", "192.168.1.0/24")
+        self.valid_data = {
+            "id": 4,
+            "name": "Class C",
+            "network_address": "192.168.0.0/24"
+        }
+        self.invalid_data = {
+            "name": "Class A",
+            "network_address": "192.168.0.0/8"
+        }
+
 
 
 class GetAllSubnetsTest(BaseViewTest):
@@ -31,10 +56,35 @@ class GetAllSubnetsTest(BaseViewTest):
         """
         # hit the API endpoint
         response = self.client.get(
-            reverse("subnets-all")
+            reverse("subnets-list-create")
         )
         # fetch the data from db
+
         expected = Subnets.objects.all()
         serialized = SubnetsSerializer(expected, many=True)
         self.assertEqual(response.data, serialized.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+class AddSubnetsTest(BaseViewTest):
+
+    def test_create_a_subnet(self):
+        """
+        This test ensures that a single subnet can be added
+        """
+        # hit the API endpoint
+        response = self.make_a_request(
+            kind="post",
+            data=self.valid_data
+        )
+        self.assertEqual(response.data, self.valid_data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        # test with invalid data
+        response = self.make_a_request(
+            kind="post",
+            data=self.invalid_data
+        )
+        self.assertEqual(
+            response.data["message"],
+            "192.168.0.0/8 has host bits set"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
