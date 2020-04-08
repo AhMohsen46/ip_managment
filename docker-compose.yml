@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  web:
+    build: .
+    command: bash -c "python manage.py makemigrations && python manage.py migrate && gunicorn -w 1 --bind 0.0.0.0:8000 ip_managment.wsgi"
+    container_name: ip_managment
+    volumes:
+      - .:/ip_managment
+    ports:
+      - "8000:8000"
