@@ -22,3 +22,36 @@ class ListSubnetsView(generics.ListAPIView):
             data=SubnetsSerializer(a_subnet).data,
             status=status.HTTP_201_CREATED
         )
+
+class SubnetsDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    GET subnets/:id
+    DELETE subnets/:id
+    """
+    queryset = Subnets.objects.all()
+    serializer_class = SubnetsSerializer
+    def get(self, request, *args, **kwargs):
+        try:
+            a_subnet = self.queryset.get(pk=kwargs["pk"])
+            return Response(SubnetsSerializer(a_subnet).data)
+        except Subnets.DoesNotExist:
+            return Response(
+                data={
+                    "message": "Subnet with id: {} does not exist".format(kwargs["pk"])
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    def delete(self, request, *args, **kwargs):
+        try:
+            a_subnet = self.queryset.get(id=kwargs["pk"])
+            a_subnet.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Subnets.DoesNotExist:
+            return Response(
+                data={
+                    "message": "Subnet with id: {} does not exist".format(kwargs["pk"])
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
