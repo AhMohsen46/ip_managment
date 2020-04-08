@@ -15,6 +15,27 @@ class BaseViewTest(APITestCase):
         if name != "" and network_address != "":
             Subnets.objects.create(name=name, network_address=network_address)
 
+    def fetch_a_subnet(self, pk=0):
+        return self.client.get(
+            reverse(
+                "subnets-detail",
+                kwargs={
+                    "pk": pk
+                }
+            )
+        )
+
+    def delete_a_subnet(self, pk=0):
+        return self.client.delete(
+            reverse(
+                "subnets-detail",
+                kwargs={
+                    "pk": pk
+                }
+            )
+        )
+
+
     def make_a_request(self, kind="post", **kwargs):
         """
         Make a post request to create a subnet
@@ -44,6 +65,8 @@ class BaseViewTest(APITestCase):
             "name": "Class A",
             "network_address": "192.168.0.0/8"
         }
+        self.valid_id = 3
+        self.invalid_id = 100
 
 
 
@@ -64,6 +87,29 @@ class GetAllSubnetsTest(BaseViewTest):
         serialized = SubnetsSerializer(expected, many=True)
         self.assertEqual(response.data, serialized.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+class GetASingleSubentTest(BaseViewTest):
+
+    def test_get_a_subnet(self):
+        """
+        This test ensures that a single subnet of a given id is
+        returned
+        """
+        # hit the API endpoint
+        response = self.fetch_a_subnet(self.valid_id)
+        # fetch the data from db
+        expected = Subnets.objects.get(pk=self.valid_id)
+        serialized = SubnetsSerializer(expected)
+        self.assertEqual(response.data, serialized.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # test with a subnet that does not exist
+        response = self.fetch_a_subnet(self.invalid_id)
+        self.assertEqual(
+            response.data["message"],
+            "Subnet with id: 100 does not exist"
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
 
 class AddSubnetsTest(BaseViewTest):
 
@@ -88,3 +134,17 @@ class AddSubnetsTest(BaseViewTest):
             "192.168.0.0/8 has host bits set"
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+class DeleteSubnetsTest(BaseViewTest):
+
+    def test_delete_a_subnet(self):
+        """
+        This test ensures that when a subnet of given id can be deleted
+        """
+        # hit the API endpoint
+        response = self.delete_a_subnet(1)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        # test with invalid data
+        response = self.delete_a_subnet(100)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
