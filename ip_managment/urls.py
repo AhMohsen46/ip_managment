@@ -19,5 +19,6 @@ from django.conf import settings
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('subnets/', include('subnet.urls'))
+    path('subnets/', include('subnet.urls')),
+    path('ips/', include('ip.urls'))
 ]
