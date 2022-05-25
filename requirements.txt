@@ -2,6 +2,6 @@ Django==2.2.10
 djangorestframework==3.9.1
 djangorestframework-jwt==1.11.0
 gunicorn==19.7.1
-PyJWT==1.6.1
+PyJWT==2.4.0
 pytz==2018.3
 ipaddress==1.0.23
